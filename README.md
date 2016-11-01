@@ -5,4 +5,5 @@ Simple structure in F# (mutable, because mutating whole tree would be too expens
 QuadTree are exeplained in detail here : https://en.wikipedia.org/wiki/Quadtree
 
 Todo :
-* Remove point from QuadTree
+* Switch from Exe to Lib
+* Add tests

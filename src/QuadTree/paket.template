@@ -1,0 +1,25 @@
+type project
+title
+    QuadTree
+owners
+    Rémy Frèrebeau
+authors 
+    Rémy Frèrebeau
+projectUrl
+    https://github.com/rfrerebe/QuadTree
+iconUrl
+    https://raw.githubusercontent.com/rfrerebe/QuadTree/master/docs/files/img/logo.png
+licenseUrl
+    https://github.com/rfrerebe/QuadTree/blob/master/LICENSE.txt
+requireLicenseAcceptance
+    false
+copyright
+    Copyright 2015
+tags
+    QuadTree
+summary
+    Provide a QuadTree structure
+description
+    Provide a QuadTree structure
+
+

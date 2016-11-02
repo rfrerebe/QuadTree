@@ -3,3 +3,7 @@ NUGET
   specs:
     FAKE (4.41.8)
     FSharp.Core (4.0.0.1)
+    FsUnit (2.3.2)
+      FSharp.Core (>= 3.1.2.5)
+      NUnit (3.5)
+    NUnit (3.5)

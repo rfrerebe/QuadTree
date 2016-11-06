@@ -146,7 +146,7 @@ Target "RunTests" (fun _ ->
         { p with
             DisableShadowCopy = true
             TimeOut = TimeSpan.FromMinutes 20. 
-            OutputFile = "TestResult.xml"})
+            OutputFile = "TestResults.xml"})
 )
 
 #if MONO

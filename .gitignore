@@ -176,7 +176,8 @@ docs/output/
 temp/
 
 # Test results produced by build
-TestResults.xml
+TestResult.xml
+Coverage.xml
 
 # Nuget outputs
 nuget/*.nupkg

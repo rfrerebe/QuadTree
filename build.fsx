@@ -9,6 +9,7 @@ open Fake.AssemblyInfoFile
 open Fake.ReleaseNotesHelper
 open Fake.UserInputHelper
 open Fake.Testing
+open Fake.OpenCoverHelper
 open System
 open System.IO
 #if MONO
@@ -146,7 +147,23 @@ Target "RunTests" (fun _ ->
         { p with
             DisableShadowCopy = true
             TimeOut = TimeSpan.FromMinutes 20. 
-            OutputFile = "TestResults.xml"})
+            OutputFile = "TestResults.xml"
+            Framework = "net-4.6"})
+)
+
+Target "Coverage" (fun _ ->
+    currentDirectory @@ "tests" @@ "QuadTree.Tests" @@ "bin" @@ "Release" @@ "QuadTree.Tests.dll" + " /config:Release /noshadow /framework:net-4.6"
+    |> OpenCover (fun p ->
+        { p with
+            ExePath = (findToolFolderInSubPath "OpenCover.Console.exe" (currentDirectory @@ "packages" @@ "test" @@ "OpenCover" @@ "tools")) @@ "OpenCover.Console.exe"
+            TestRunnerExePath = (findToolFolderInSubPath "nunit-console.exe" (currentDirectory @@ "packages" @@ "test" @@ "NUnit.Runners" @@ "tools")) @@ "nunit-console.exe"
+            Register = RegisterUser
+            MergeByHash = true
+            Filter = "+[QuadTree*]* -[QuadTree.Tests]*"
+            OptionalArguments = "-threshold:10"
+            TimeOut = TimeSpan.FromMinutes 10.
+            Output = "Coverage.xml"
+            }) 
 )
 
 #if MONO
@@ -373,6 +390,7 @@ Target "All" DoNothing
 "AssemblyInfo"
   ==> "Build"
   ==> "CopyBinaries"
+  ==> "Coverage"
   ==> "RunTests"
   ==> "GenerateReferenceDocs"
   ==> "GenerateDocs"

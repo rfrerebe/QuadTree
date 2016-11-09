@@ -179,6 +179,10 @@ temp/
 TestResult.xml
 Coverage.xml
 
+# Coverage Report folder
+coverageReport/
+coverageReport/coverageReportHistory/
+
 # Nuget outputs
 nuget/*.nupkg
 release.cmd

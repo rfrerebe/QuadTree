@@ -10,6 +10,7 @@ open Fake.ReleaseNotesHelper
 open Fake.UserInputHelper
 open Fake.Testing
 open Fake.OpenCoverHelper
+open Fake.ReportGeneratorHelper
 open System
 open System.IO
 #if MONO
@@ -166,6 +167,13 @@ Target "Coverage" (fun _ ->
             }) 
 )
 
+Target "CovergageReport" (fun _ ->
+    ["Coverage.xml" ]
+    |> ReportGenerator (fun p -> 
+        { p with 
+            ExePath = (findToolFolderInSubPath "ReportGenerator.exe" (currentDirectory @@ "packages" @@ "test" @@ "ReportGenerator" @@ "tools")) @@ "ReportGenerator.exe"
+    })
+)
 #if MONO
 #else
 // --------------------------------------------------------------------------------------
@@ -391,6 +399,7 @@ Target "All" DoNothing
   ==> "Build"
   ==> "CopyBinaries"
   ==> "Coverage"
+  ==> "CovergageReport"
   ==> "RunTests"
   ==> "GenerateReferenceDocs"
   ==> "GenerateDocs"

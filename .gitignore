@@ -176,8 +176,7 @@ docs/output/
 temp/
 
 # Test results produced by build
-TestResult.xml
-Coverage.xml
+/testReport/TestResult.xml
 
 # Coverage Report folder
 coverageReport/

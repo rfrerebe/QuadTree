@@ -60,7 +60,7 @@ let ``Can insert and remove  point from QuadTree ``(p : Point) =
   |> should  be True
   remove p q
 
-[<Property( Arbitrary=[| typeof<NEPoint> |] )>]
+[<Property( Arbitrary=[| typeof<NEPoint> |], MaxTest = 10)>]
 let ``Closest point from SW is origin`` (p: Point) =
   let q = defaultQuadTree ()
   insert ({Lat = 0.0; Lng = 0.0}) q
@@ -79,7 +79,7 @@ let ``Closest point from SW is origin`` (p: Point) =
 
 
 
-[<Property( Arbitrary=[| typeof<SEPoint> |] )>]
+[<Property( Arbitrary=[| typeof<SEPoint> |], MaxTest = 10)>]
 let ``Closest point from NW is origin`` (p: Point) =
   let q = defaultQuadTree ()
   insert ({Lat = 0.0; Lng = 0.0}) q
@@ -98,7 +98,7 @@ let ``Closest point from NW is origin`` (p: Point) =
 
 
 
-[<Property( Arbitrary=[| typeof<NWPoint> |] )>]
+[<Property( Arbitrary=[| typeof<NWPoint> |], MaxTest = 10)>]
 let ``Closest point from SE is origin`` (p: Point) =
   let q = defaultQuadTree ()
   insert ({Lat = 0.0; Lng = 0.0}) q
@@ -117,7 +117,7 @@ let ``Closest point from SE is origin`` (p: Point) =
 
 
 
-[<Property( Arbitrary=[| typeof<SWPoint> |] )>]
+[<Property( Arbitrary=[| typeof<SWPoint> |] , MaxTest = 10)>]
 let ``Closest point from NE is origin`` (p: Point) =
   let q = defaultQuadTree ()
   insert ({Lat = 0.0; Lng = 0.0}) q

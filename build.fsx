@@ -68,6 +68,17 @@ let gitRaw = environVarOrDefault "gitRaw" "https://raw.githubusercontent.com/rfr
 // END TODO: The rest of the file includes standard build steps
 // --------------------------------------------------------------------------------------
 
+let reportFolder = currentDirectory @@ "coverageReport"
+let historyFolder = reportFolder @@ "coverageReportHistory"
+let coverageFile = reportFolder @@ "Coverage.xml"
+let coverageTest = reportFolder @@ "TestResult.xml"
+let testFolder = currentDirectory @@ "testReport"
+
+let testFile = testFolder @@ "TestResult.xml"
+
+CreateDir historyFolder
+CreateDir testFolder
+
 // Read additional information from the release notes document
 let release = LoadReleaseNotes "RELEASE_NOTES.md"
 
@@ -148,12 +159,12 @@ Target "RunTests" (fun _ ->
         { p with
             DisableShadowCopy = true
             TimeOut = TimeSpan.FromMinutes 20. 
-            OutputFile = "TestResults.xml"
+            OutputFile = testFile
             Framework = "net-4.6"})
 )
 
 Target "Coverage" (fun _ ->
-    currentDirectory @@ "tests" @@ "QuadTree.Tests" @@ "bin" @@ "Release" @@ "QuadTree.Tests.dll" + " /config:Release /noshadow /framework:net-4.6"
+    currentDirectory @@ "tests" @@ "QuadTree.Tests" @@ "bin" @@ "Release" @@ "QuadTree.Tests.dll" + " /config:Release /noshadow /framework:net-4.6 /xml:" + coverageTest
     |> OpenCover (fun p ->
         { p with
             ExePath = (findToolFolderInSubPath "OpenCover.Console.exe" (currentDirectory @@ "packages" @@ "test" @@ "OpenCover" @@ "tools")) @@ "OpenCover.Console.exe"
@@ -161,17 +172,19 @@ Target "Coverage" (fun _ ->
             Register = RegisterUser
             MergeByHash = true
             Filter = "+[QuadTree*]* -[QuadTree.Tests]*"
-            OptionalArguments = "-threshold:10"
+            //OptionalArguments = "-threshold:10"
             TimeOut = TimeSpan.FromMinutes 10.
-            Output = "Coverage.xml"
+            Output = coverageFile
             }) 
 )
 
 Target "CovergageReport" (fun _ ->
-    ["Coverage.xml" ]
+    [coverageFile ]
     |> ReportGenerator (fun p -> 
         { p with 
             ExePath = (findToolFolderInSubPath "ReportGenerator.exe" (currentDirectory @@ "packages" @@ "test" @@ "ReportGenerator" @@ "tools")) @@ "ReportGenerator.exe"
+            TargetDir = reportFolder
+            HistoryDir = historyFolder
     })
 )
 #if MONO
@@ -398,8 +411,6 @@ Target "All" DoNothing
 "AssemblyInfo"
   ==> "Build"
   ==> "CopyBinaries"
-  ==> "Coverage"
-  ==> "CovergageReport"
   ==> "RunTests"
   ==> "GenerateReferenceDocs"
   ==> "GenerateDocs"
@@ -411,6 +422,10 @@ Target "All" DoNothing
   ==> "BuildPackage"
   ==> "All"
   =?> ("ReleaseDocs",isLocalBuild)
+
+"Build"
+  ==> "Coverage"
+  ==> "CovergageReport"
 
 "GenerateHelp"
   ==> "GenerateReferenceDocs"

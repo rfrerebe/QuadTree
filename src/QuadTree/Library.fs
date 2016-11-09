@@ -164,13 +164,11 @@ module QuadTree
   let findClosest (p: Point) (q: QuadTree) =
       let distance p' =
           (p'.Lat - p.Lat)**2.0 + (p'.Lng - p.Lng)**2.0
-      let minimum (m : Point option) ( m' : Point option) =
-          match m, m' with
-          | None, None -> None
-          | None, _ -> m'
-          | _, None -> m
-          | Some point, Some point' ->
-              seq [point; point']
+      let minimum (m : Point option) ( m' : Point) =
+          match m with
+          | None -> Some m'
+          | Some point ->
+              seq [point; m']
               |> Seq.minBy distance
               |> Option.Some
       let rec findClosest' (min : Point option)  (q' : QuadTree) =
@@ -180,7 +178,6 @@ module QuadTree
               let min' =
                   q'.Data
                   |> Seq.minBy distance
-                  |> Option.Some
                   |> minimum min
               match p.Lat, p.Lng with
               | x, y when x >= q'.Bound.Center.Lat && y >= q'.Bound.Center.Lng

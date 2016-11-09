@@ -13,7 +13,14 @@ type Within5 =
       |> Gen.filter (fun (t,t') -> abs(t) <= 5.0 && abs(t') <= 5.0 )
       |> Gen.map (fun (t,t') -> {Lat = t; Lng =t' })
       |> Arb.fromGen
-
+  
+type Outside5 =
+  static member Point()=
+    Arb.generate<float>
+    |> Gen.two
+    |> Gen.filter (fun (t,t') -> abs(t) > 5.0 || abs(t') > 5.0 )
+    |> Gen.map (fun (t,t') -> {Lat = t; Lng =t' })
+    |> Arb.fromGen
 
 type SWPoint =
   static member Point() =
@@ -133,3 +140,14 @@ let ``Closest point from NE is origin`` (p: Point) =
   result
   |> Option.get
   |> should equal {Lat = 0.0; Lng = 0.0}
+
+
+[<Property( Arbitrary=[| typeof<Within5> |] )>]
+let ``Bound contains Point``(p : Point) =
+  contains (defaultQuadTree ()).Bound p
+  |> should be True
+
+[<Property( Arbitrary=[| typeof<Outside5> |] )>]
+let ``Bound doesn't contains Point``(p : Point) =
+  contains (defaultQuadTree ()).Bound p
+  |> should be False

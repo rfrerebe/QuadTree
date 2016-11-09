@@ -160,11 +160,11 @@ Target "RunTests" (fun _ ->
             DisableShadowCopy = true
             TimeOut = TimeSpan.FromMinutes 20. 
             OutputFile = testFile
-            Framework = "net-4.6"})
+            Framework = "net-4.0"})
 )
 
 Target "Coverage" (fun _ ->
-    currentDirectory @@ "tests" @@ "QuadTree.Tests" @@ "bin" @@ "Release" @@ "QuadTree.Tests.dll" + " /config:Release /noshadow /framework:net-4.6 /xml:" + coverageTest
+    currentDirectory @@ "tests" @@ "QuadTree.Tests" @@ "bin" @@ "Release" @@ "QuadTree.Tests.dll" + " /config:Release /noshadow /framework:net-4.0 /xml:" + coverageTest
     |> OpenCover (fun p ->
         { p with
             ExePath = (findToolFolderInSubPath "OpenCover.Console.exe" (currentDirectory @@ "packages" @@ "test" @@ "OpenCover" @@ "tools")) @@ "OpenCover.Console.exe"

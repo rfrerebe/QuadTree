@@ -3,105 +3,99 @@ module QuadTree
   open System.Collections.Concurrent
 
   type Point = { Lat :float; Lng : float}
-  type Bound = { Center : Point; HalfDimension : float }
 
   type Direction =
       | NW 
       | NE
       | SW
       | SE
-      
-  type Node = { NW: QuadTree option; NE: QuadTree option; SE: QuadTree option; SW: QuadTree option }
-  and QuadTree = { Bound : Bound; Max : int; Data : ConcurrentBag<Point>; mutable Node : Node option }
 
-  let emptyNode = {NW = None; NE = None; SW = None; SE = None }
+  type IBound<'T> =  
+    abstract member Contains : Point -> bool
+    abstract member Split : Direction -> 'T
+    abstract member GetDirection : Point -> Direction
 
-  let contains  (b: Bound)  (p: Point)  =
-      match abs(p.Lat - b.Center.Lat) <= b.HalfDimension, abs(p.Lng- b.Center.Lng)<= b.HalfDimension with
-      | true, true -> true
-      | _, _ -> false
+  /// Rectangle type defined with
+  /// * a Point as a Center
+  /// * a Height
+  /// * a Width
+  type Rectangle =
+    { Center : Point; 
+    HalfHeight : float;
+    HalfWidth : float } 
+    interface IBound<Rectangle> with 
+      member self.Contains (p: Point)  =
+        match abs(p.Lat - self.Center.Lat) <= self.HalfHeight, abs(p.Lng- self.Center.Lng)<= self.HalfWidth with
+        | true, true -> true
+        | _, _ -> false
+      member self.Split (d :Direction)  =
+        let quarterHeight = self.HalfHeight / 2.0
+        let quaterWidth = self.HalfWidth / 2.0
+        match d with
+        | NW ->
+            let center = { Lat = self.Center.Lat + quarterHeight ; Lng = self.Center.Lng + quaterWidth }
+            { Center = center; HalfHeight =  quarterHeight; HalfWidth = quaterWidth } 
+        | SW -> 
+            let center = { Lat = self.Center.Lat + quarterHeight ; Lng = self.Center.Lng - quaterWidth }
+            { Center = center; HalfHeight =  quarterHeight; HalfWidth = quaterWidth }
+        | NE ->
+            let center = { Lat = self.Center.Lat - quarterHeight ; Lng = self.Center.Lng + quaterWidth }
+            { Center = center; HalfHeight =  quarterHeight; HalfWidth = quaterWidth }
+        | SE ->
+            let center = { Lat = self.Center.Lat - quarterHeight ; Lng = self.Center.Lng - quaterWidth }
+            { Center = center; HalfHeight =  quarterHeight; HalfWidth = quaterWidth }
+      member self.GetDirection (p: Point) =
+        match p.Lat, p.Lng with
+        | x, y when x >= self.Center.Lat && y >= self.Center.Lng  ->  NW
+        | x, y when x >= self.Center.Lat && y < self.Center.Lng -> SW
+        | x, y when x < self.Center.Lat && y >=self.Center.Lng -> NE
+        | _, _ -> SE
 
-  let intersect (b:Bound) (b': Bound) =
-      let distance = b'.HalfDimension + b.HalfDimension
-      match abs(b'.Center.Lat - b.Center.Lat)<= distance, abs(b'.Center.Lng - b.Center.Lng)<=distance with
-      | true,_ -> true
-      | _, true -> true
-      | _, _ -> false 
 
-  let init p halfDimension max =
-      { Bound = { Center = p; HalfDimension = halfDimension};
+  /// Square type defined with
+  /// * a Point as a Center
+  /// * a Half Dimension
+  type Square = 
+    { Center : Point; 
+    HalfDimension : float } 
+    interface IBound<Square> with 
+      member self.Contains (p: Point)  =
+        match abs(p.Lat - self.Center.Lat) <= self.HalfDimension, abs(p.Lng- self.Center.Lng)<= self.HalfDimension with
+        | true, true -> true
+        | _, _ -> false
+      member self.Split (d :Direction)  =
+        let quarter = self.HalfDimension / 2.0
+        match d with
+        | NW ->
+            let center = { Lat = self.Center.Lat + quarter ; Lng = self.Center.Lng + quarter }
+            { Center = center; HalfDimension =  quarter } 
+        | SW -> 
+            let center = { Lat = self.Center.Lat + quarter ; Lng = self.Center.Lng - quarter }
+            { Center = center; HalfDimension =  quarter }
+        | NE ->
+            let center = { Lat = self.Center.Lat - quarter ; Lng = self.Center.Lng + quarter }
+            { Center = center; HalfDimension =  quarter }
+        | SE ->
+            let center = { Lat = self.Center.Lat - quarter ; Lng = self.Center.Lng - quarter }
+            { Center = center; HalfDimension =  quarter }
+      member self.GetDirection (p: Point) =
+        match p.Lat, p.Lng with
+        | x, y when x >= self.Center.Lat && y >= self.Center.Lng  ->  NW
+        | x, y when x >= self.Center.Lat && y < self.Center.Lng -> SW
+        | x, y when x < self.Center.Lat && y >=self.Center.Lng -> NE
+        | _, _ -> SE
+
+   
+  type Node<'T when 'T :> IBound<'T>> = { NW: QuadTree<'T> option; NE: QuadTree<'T> option; SE: QuadTree<'T> option; SW: QuadTree<'T> option }
+  and QuadTree<'T when 'T :> IBound<'T>> = { Bound : IBound<'T>; Max : int; Data : ConcurrentBag<Point>; mutable Node : Node<'T> option }
+
+  let private emptyNode = {NW = None; NE = None; SW = None; SE = None }
+  let init (bound : IBound<'T>)  max =
+      { Bound = bound;
           Max = max;
           Data = new ConcurrentBag<Point>();
           Node = None }
-
-  let createSubQuadTree (q: QuadTree) (dir : Direction) =
-      let quarter = q.Bound.HalfDimension / 2.0
-      match dir with
-      | NW ->
-        let center = { Lat = q.Bound.Center.Lat + quarter ; Lng = q.Bound.Center.Lng + quarter }
-        init center quarter q.Max
-      | SW -> 
-          let center = { Lat = q.Bound.Center.Lat + quarter ; Lng = q.Bound.Center.Lng - quarter }
-          init center quarter q.Max
-      | NE ->
-          let center = { Lat = q.Bound.Center.Lat - quarter ; Lng = q.Bound.Center.Lng + quarter }
-          init center quarter q.Max
-      | SE ->
-          let center = { Lat = q.Bound.Center.Lat - quarter ; Lng = q.Bound.Center.Lng - quarter }
-          init center quarter q.Max
-
-  let subdivide (q : QuadTree) (dir : Direction) =
-      match q.Node with
-      | Some n ->
-          match dir with
-          | NW -> 
-              match n.NW with
-              | Some q' ->  q'
-              | None -> 
-                  let nq = createSubQuadTree q NW
-                  q.Node <- Some {n with NW = Some(nq) }
-                  nq
-          | NE -> 
-              match n.NE with 
-              | Some q' -> q'
-              | None -> 
-                  let nq = createSubQuadTree q NE
-                  q.Node <- Some {n with NE = Some(nq) }
-                  nq
-          | SW -> 
-              match n.SW with
-              | Some q' -> q'
-              | None ->
-                  let nq = createSubQuadTree q SW
-                  q.Node <- Some {n with SW = Some(nq) }
-                  nq
-          | SE -> 
-              match n.SE with
-              | Some q' -> q'
-              | None ->
-                  let nq = createSubQuadTree q SE
-                  q.Node <- Some {n with SE = Some(nq) }
-                  nq
-      | None -> 
-          match dir with
-          | NW -> 
-              let nq = createSubQuadTree q NW
-              q.Node <- Some {emptyNode with NW = Some(nq) }
-              nq
-          | NE -> 
-              let nq = createSubQuadTree q NE
-              q.Node <- Some {emptyNode with NE = Some(nq) }
-              nq
-          | SW ->
-              let nq = createSubQuadTree q SW
-              q.Node <- Some {emptyNode with SW = Some(nq) }
-              nq
-          | SE -> 
-              let nq = createSubQuadTree q SE
-              q.Node <- Some {emptyNode with SE = Some(nq) }
-              nq
-
-  let getSubQuadTree (n: Node option) (d :Direction) : QuadTree option =
+  let private getSubQuadTree (n: Node<'T> option) (d :Direction) : QuadTree<'T> option =
       match n with
       | None -> None
       | Some n' ->
@@ -110,10 +104,37 @@ module QuadTree
           | NE -> n'.NE
           | SW -> n'.SW
           | SE -> n'.SE
+  let private createSubQuadTree (q: QuadTree<'T>) (dir : Direction) =
+      init (q.Bound.Split dir) q.Max
 
+  let private initializeNode n =
+     match n with 
+     | Some n -> n
+     | None -> emptyNode
+  let private createNode q subq dir =
+      let node = initializeNode q.Node
+      match dir with
+      | NW -> q.Node <- Some { node with NW = Some(subq)}
+      | NE -> q.Node <- Some { node with NE = Some(subq)}
+      | SW -> q.Node <- Some { node with SW = Some(subq)}
+      | SE -> q.Node <- Some { node with SE = Some(subq)}
+  let private subdivide (q : QuadTree<'T>) (dir : Direction) = 
+     match getSubQuadTree q.Node dir with
+     | Some q' ->  q'
+     | None ->
+         let subQuadTree = createSubQuadTree q dir
+         createNode q subQuadTree dir
+         subQuadTree
 
-  let rec insert (p: Point)(q : QuadTree)  =
-      match p |> contains q.Bound with
+  /// <summary>
+  /// Insert a Point in a QuadTree
+  /// </summary>
+  /// <returns>
+  /// True if Point was inserted in QuadTree
+  /// False otherwise
+  /// </returns     
+  let rec insert (q : QuadTree<'T>) (p: Point)  =
+      match q.Bound.Contains p with
       | false -> false
       | true ->
           match q.Data.Count < q.Max with
@@ -121,47 +142,38 @@ module QuadTree
               q.Data.Add p
               true
           | false ->
-              match p.Lat, p.Lng with
-              | x, y when x >= q.Bound.Center.Lat && y >= q.Bound.Center.Lng
-                  -> subdivide q NW
-                      |> insert p
-              | x, y when x >= q.Bound.Center.Lat && y < q.Bound.Center.Lng
-                  -> subdivide q SW
-                      |> insert p
-              | x, y when x < q.Bound.Center.Lat && y >= q.Bound.Center.Lng
-                  -> subdivide q NE
-                      |> insert p
-              | _, _ -> subdivide q SE
-                      |> insert p
+              q.Bound.GetDirection p
+              |> subdivide q 
+              |> insert  <| p
 
-
-  let rec remove (p : Point) (q: QuadTree) =
-      match p |> contains q.Bound with
+  /// <summary>
+  /// Remove a Point from a QuadTree
+  /// </summary>
+  /// <returns>
+  /// True if Point was removed from QuadTree
+  /// False otherwise
+  /// </returns  
+  let rec remove (q: QuadTree<'T>)  (p : Point) =
+      match q.Bound.Contains p with
       | false -> false
       | true ->
           match q.Data.TryTake (ref p) with
           | true -> true
           | false ->
-              match p.Lat, p.Lng with
-              | x, y when x >= q.Bound.Center.Lat && y >= q.Bound.Center.Lng
-                  ->  match getSubQuadTree q.Node NW with
-                      | None -> true // or should it be false ?
-                      | Some q ->  remove p q
-              | x, y when x >= q.Bound.Center.Lat && y < q.Bound.Center.Lng
-                  ->  match getSubQuadTree q.Node SW with
-                      | None -> true // or should it be false ?
-                      | Some q ->  remove p q
-              | x, y when x < q.Bound.Center.Lat && y >= q.Bound.Center.Lng
-                  ->  match getSubQuadTree q.Node NE with
-                      | None -> true // or should it be false ?
-                      | Some q ->  remove p q
-              | _, _ 
-                  ->  match getSubQuadTree q.Node SE with
-                      | None -> true // or should it be false ?
-                      | Some q ->  remove p q
+              let dir  = q.Bound.GetDirection p
+              match getSubQuadTree q.Node dir with
+              | None -> false
+              | Some q ->  remove q p
 
 
-  let findClosest (p: Point) (q: QuadTree) =
+  /// <summary>
+  /// Returns the closest Point in a QuadTree
+  /// </summary>
+  /// <returns>
+  /// Some(Point) if a closest match is found
+  /// None otherwise
+  /// </returns 
+  let findClosest (q: QuadTree<'T>) (p: Point) =
       let distance p' =
           (p'.Lat - p.Lat)**2.0 + (p'.Lng - p.Lng)**2.0
       let minimum (m : Point option) ( m' : Point) =
@@ -171,33 +183,19 @@ module QuadTree
               seq [point; m']
               |> Seq.minBy distance
               |> Option.Some
-      let rec findClosest' (min : Point option)  (q' : QuadTree) =
-          match q.Data.IsEmpty with
+      let rec findClosest' (min : Point option)  (q' : QuadTree<'T>) =
+          match q'.Data.IsEmpty with
           | true -> min
           | false ->
               let min' =
                   q'.Data
                   |> Seq.minBy distance
                   |> minimum min
-              match p.Lat, p.Lng with
-              | x, y when x >= q'.Bound.Center.Lat && y >= q'.Bound.Center.Lng
-                  ->  match getSubQuadTree q'.Node NW with
-                          | None -> min'
-                          | Some q -> findClosest' min' q
-              | x, y when x >= q'.Bound.Center.Lat && y < q'.Bound.Center.Lng
-                  ->  match getSubQuadTree q'.Node SW with
-                      | None -> min'
-                      | Some q -> findClosest' min' q
-              | x, y when x < q'.Bound.Center.Lat && y >= q'.Bound.Center.Lng
-                  ->  match getSubQuadTree q'.Node NE with
-                      | None -> min'
-                      | Some q -> findClosest' min' q
-              | _, _ 
-                  ->  match getSubQuadTree q'.Node SE with
-                      | None -> min'
-                      | Some q -> findClosest' min' q
-
-      match p |> contains q.Bound with
+              let dir  = q'.Bound.GetDirection p
+              match getSubQuadTree q'.Node dir with
+              | None -> min'
+              | Some q -> findClosest' min' q
+      match  q.Bound.Contains p  with
       | false -> None
       | true -> findClosest' None q
       

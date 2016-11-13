@@ -45,7 +45,10 @@ type NWPoint =
       |> Gen.filter (fun (t,t') -> t >= -5.0  && t < 0.0 && t' <= 5.0 && t' > 0.0 )
       |> Gen.map (fun (t,t') -> {Lat = t; Lng =t' })
       |> Arb.fromGen
-let defaultQuadTree () = init  {Lat = 0.0; Lng = 0.0 } 5.0 1
+let defaultQuadTree () =
+  let square = {Center = {Lat = 0.0; Lng = 0.0 }; HalfDimension =5.0 }
+  let bound =init square  1 
+  bound
 
 type SEPoint =
   static member Point() =
@@ -57,24 +60,24 @@ type SEPoint =
 
 [<Property( Arbitrary=[| typeof<Within5> |] )>]
 let ``Can insert point from QuadTree ``(p : Point) =
-  insert p (defaultQuadTree ())
+  insert (defaultQuadTree ()) p
 
 
 [<Property( Arbitrary=[| typeof<Within5> |] )>]
 let ``Can insert and remove  point from QuadTree ``(p : Point) =
   let q = defaultQuadTree ()
-  insert p q
+  insert q p
   |> should  be True
-  remove p q
+  remove q p
 
 [<Property( Arbitrary=[| typeof<NEPoint> |], MaxTest = 10)>]
 let ``Closest point from SW is origin`` (p: Point) =
   let q = defaultQuadTree ()
-  insert ({Lat = 0.0; Lng = 0.0}) q
+  insert q ({Lat = 0.0; Lng = 0.0})
   |> ignore
-  insert p q
+  insert q p
   |> should  be True
-  let result  = findClosest ({Lat = -1.0; Lng = -1.0}) q
+  let result  = findClosest  q ({Lat = -1.0; Lng = -1.0})
 
   result
   |> Option.isSome 
@@ -89,11 +92,11 @@ let ``Closest point from SW is origin`` (p: Point) =
 [<Property( Arbitrary=[| typeof<SEPoint> |], MaxTest = 10)>]
 let ``Closest point from NW is origin`` (p: Point) =
   let q = defaultQuadTree ()
-  insert ({Lat = 0.0; Lng = 0.0}) q
+  insert q ({Lat = 0.0; Lng = 0.0})
   |> ignore
-  insert p q
+  insert q p
   |> should  be True
-  let result  = findClosest ({Lat = -1.0; Lng = 1.0}) q
+  let result  = findClosest q ({Lat = -1.0; Lng = 1.0})
   
   result
   |> Option.isSome 
@@ -108,11 +111,11 @@ let ``Closest point from NW is origin`` (p: Point) =
 [<Property( Arbitrary=[| typeof<NWPoint> |], MaxTest = 10)>]
 let ``Closest point from SE is origin`` (p: Point) =
   let q = defaultQuadTree ()
-  insert ({Lat = 0.0; Lng = 0.0}) q
+  insert q ({Lat = 0.0; Lng = 0.0})
   |> ignore
-  insert p q
+  insert q p
   |> should  be True
-  let result  = findClosest ({Lat = 1.0; Lng = -1.0}) q
+  let result  = findClosest q ({Lat = 1.0; Lng = -1.0})
   
   result
   |> Option.isSome 
@@ -127,11 +130,11 @@ let ``Closest point from SE is origin`` (p: Point) =
 [<Property( Arbitrary=[| typeof<SWPoint> |] , MaxTest = 10)>]
 let ``Closest point from NE is origin`` (p: Point) =
   let q = defaultQuadTree ()
-  insert ({Lat = 0.0; Lng = 0.0}) q
+  insert q ({Lat = 0.0; Lng = 0.0})
   |> ignore
-  insert p q
+  insert q p
   |> should  be True
-  let result  = findClosest ({Lat = 1.0; Lng = 1.0}) q
+  let result  = findClosest q ({Lat = 1.0; Lng = 1.0})
   
   result
   |> Option.isSome 
@@ -144,10 +147,10 @@ let ``Closest point from NE is origin`` (p: Point) =
 
 [<Property( Arbitrary=[| typeof<Within5> |] )>]
 let ``Bound contains Point``(p : Point) =
-  contains (defaultQuadTree ()).Bound p
+  (defaultQuadTree ()).Bound.Contains p
   |> should be True
 
 [<Property( Arbitrary=[| typeof<Outside5> |] )>]
 let ``Bound doesn't contains Point``(p : Point) =
-  contains (defaultQuadTree ()).Bound p
+  (defaultQuadTree ()).Bound.Contains p
   |> should be False

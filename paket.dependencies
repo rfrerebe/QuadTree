@@ -1,9 +1,8 @@
 source https://nuget.org/api/v2
-
-nuget FSharp.Core redirects: force
-
+nuget FSharp.Core
 
 group Build
+
   source https://nuget.org/api/v2
   
   nuget SourceLink.Fake
@@ -14,10 +13,11 @@ group Build
 
 group Test
   source https://nuget.org/api/v2
-  
+
   nuget NUnit
-  nuget NUnit.Runners
+  nuget NUnit3TestAdapter
   nuget FsUnit
   nuget FsCheck.NUnit
   nuget OpenCover
   nuget ReportGenerator
+  nuget Microsoft.NET.Test.Sdk

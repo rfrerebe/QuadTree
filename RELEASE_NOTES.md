@@ -1,3 +1,6 @@
+### 0.3 - 02 march 2018
+* Switch to dotnet core
+
 ### 0.2 - 13 november 2016
 * Added Rectange
 * Change on QuadTree with IBound interface

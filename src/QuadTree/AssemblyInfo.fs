@@ -5,13 +5,13 @@ open System.Reflection
 [<assembly: AssemblyTitleAttribute("QuadTree")>]
 [<assembly: AssemblyProductAttribute("QuadTree")>]
 [<assembly: AssemblyDescriptionAttribute("Provide a QuadTree structure")>]
-[<assembly: AssemblyVersionAttribute("0.2")>]
-[<assembly: AssemblyFileVersionAttribute("0.2")>]
+[<assembly: AssemblyVersionAttribute("0.3")>]
+[<assembly: AssemblyFileVersionAttribute("0.3")>]
 do ()
 
 module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyTitle = "QuadTree"
     let [<Literal>] AssemblyProduct = "QuadTree"
     let [<Literal>] AssemblyDescription = "Provide a QuadTree structure"
-    let [<Literal>] AssemblyVersion = "0.2"
-    let [<Literal>] AssemblyFileVersion = "0.2"
+    let [<Literal>] AssemblyVersion = "0.3"
+    let [<Literal>] AssemblyFileVersion = "0.3"

@@ -48,10 +48,9 @@ let authors = [ "Rémy Frèrebeau" ]
 let tags = "QuadTree"
 
 // File system information
-let solutionFile  = "QuadTree.sln"
+let libraryPath = "./src/QuadTree" |> FullName
 
-// Pattern specifying assemblies to be tested using NUnit
-let testAssemblies = "tests/**/bin/Release/*Tests*.dll"
+let testsPath = "./tests/QuadTree.Tests" |> FullName
 
 // Git configuration (used for publishing documentation in gh-pages branch)
 // The profile where the project is posted
@@ -81,6 +80,19 @@ CreateDir testFolder
 
 // Read additional information from the release notes document
 let release = LoadReleaseNotes "RELEASE_NOTES.md"
+
+
+let dotnetcliVersion = DotNetCli.GetDotNetSDKVersionFromGlobalJson()
+let mutable dotnetExePath = "dotnet"
+
+let runDotnet workingDir args =
+    let result =
+        ExecProcess (fun info ->
+            info.FileName <- dotnetExePath
+            info.WorkingDirectory <- workingDir
+            info.Arguments <- args) TimeSpan.MaxValue
+    if result <> 0 then failwithf "dotnet %s failed" args
+
 
 // Helper active pattern for project types
 let (|Fsproj|Csproj|Vbproj|Shproj|) (projFileName:string) =
@@ -129,37 +141,39 @@ Target "CopyBinaries" (fun _ ->
     |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
 )
 
+
+Target "InstallDotNetCore" (fun _ ->
+    dotnetExePath <- DotNetCli.InstallDotNetSDK dotnetcliVersion
+)
+
 // --------------------------------------------------------------------------------------
 // Clean build results
 
 Target "Clean" (fun _ ->
-    !! solutionFile |> MSBuildRelease "" "Clean" |> ignore
-    CleanDirs ["bin"; "temp"; "docs/output"]
+    !!"src/**/bin"
+    ++ "test/**/bin"
+    |> CleanDirs
+
+    !! "src/**/obj/*.nuspec"
+    ++ "test/**/obj/*.nuspec"
+    |> DeleteFiles
+
+    CleanDirs ["bin"; "temp"]
 )
 
 // --------------------------------------------------------------------------------------
 // Build library & test project
 
 Target "Build" (fun _ ->
-    !! solutionFile
-#if MONO
-    |> MSBuildReleaseExt "" [ ("DefineConstants","MONO") ] "Build"
-#else
-    |> MSBuildRelease "" "Build"
-#endif
-    |> ignore
+    runDotnet libraryPath "build"
+    runDotnet testsPath "build"
 )
 
 // --------------------------------------------------------------------------------------
 // Run the unit tests using test runner
 
 Target "RunTests" (fun _ ->
-    !! testAssemblies
-    |> NUnit (fun p ->
-        { p with
-            DisableShadowCopy = true
-            TimeOut = TimeSpan.FromMinutes 20. 
-            OutputFile = testFile})
+    runDotnet testsPath "test"
 )
 
 Target "Coverage" (fun _ ->
